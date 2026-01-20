@@ -1,10 +1,10 @@
-cff-version: 1.1.0
+cff-version: 1.3.0
 message: "If you use this software, please cite it as below."
 authors:
-- family-names: Li
-  given-names: Jiaqing
-orcid: https://orcid.org/0000-0002-4856-5524
-title:Li-Chia-ching/AlfalfaGeoSelect: v3.0: First public release – publication-ready selection pipeline
+- family-names: "Li"
+  given-names: "Jiaqing"
+orcid: "https://orcid.org/0000-0002-4856-5524"
+title: "Li-Chia-ching/AlfalfaGeoSelect: v3.0: First public release – publication-ready selection pipeline"
 version: v3.0
 doi: 10.5281/zenodo.18317050
 date-released: 2026-01-20
