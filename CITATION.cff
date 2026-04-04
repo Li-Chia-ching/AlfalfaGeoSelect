@@ -4,8 +4,8 @@ authors:
 - family-names: "Li"
   given-names: "Jiaqing"
 orcid: "https://orcid.org/0000-0002-4856-5524"
-title: "Li-Chia-ching/AlfalfaGeoSelect: v3.0: First public release – publication-ready selection pipeline"
-version: v3.0
-doi: 10.5281/zenodo.18317050
-date-released: 2026-01-20
-url: "https://github.com/Li-Chia-ching/AlfalfaGeoSelect/releases/tag/v3.0"
+title: "Li-Chia-ching/AlfalfaGeoSelect"
+version: v4.0
+doi: 10.5281/zenodo.19415255
+date-released: 2026-04-04
+url: "https://github.com/Li-Chia-ching/AlfalfaGeoSelect"
