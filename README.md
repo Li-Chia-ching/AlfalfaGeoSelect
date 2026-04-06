@@ -115,169 +115,228 @@ For advanced multi-year selection and GWAS-ready candidate identification, see:
 
 ## Overview
 
-This pipeline implements a **multi-year, multi-trait selection framework** for identifying elite alfalfa individuals suitable for GWAS.
+This repository contains a publication-ready R pipeline for:
 
-It integrates phenotypic data from:
-- **Autumn 2025 (establishment stage)**
-- **Spring 2026 (regrowth stage)**
+* Genetic variation analysis in structured populations
+* Variance component estimation using linear mixed models (LMM)
+* Multivariate phenotypic structure analysis (PCA)
+* Neyman optimal allocation for stratified sampling
+* Quantile-based deterministic sampling within families
+* Extraction of a representative core subset (n = 200) for GWAS
 
-The pipeline combines:
-- **feature engineering (dynamic traits)**
-- **Pareto optimality**
-- **MGIDI-based ideotype selection**
-
-to produce a robust set of candidate genotypes.
+The pipeline is specifically designed for **two-year phenotypic datasets measured under the same environment**, with a focus on **family-based segregation populations**.
 
 ---
 
-## Key Innovations
+## Key Features
 
-### 1. Dynamic Trait Engineering
-Derived traits capturing temporal response:
+* **Repeatability estimation (R)** using variance components (family vs residual)
+* **Multivariate sampling strategy** based on PC1–PC2 dispersion
+* **Robust stratified sampling** combining:
 
-- `Growth_Diff = Spring - Autumn`
-- `Plasticity_Ratio = Spring / Autumn`
-
-These traits quantify:
-- compensatory growth
-- seasonal plasticity
-
----
-
-### 2. Reaction Norm Analysis
-- Tracks **individual-level trajectories**
-- Reveals:
-  - stable genotypes
-  - high plasticity genotypes
-  - autumn-dormant vs spring-responsive types
+  * Neyman allocation (between-family)
+  * Quantile gradient sampling (within-family)
+* **Deterministic + stochastic hybrid sampling** ensuring representativeness
+* **Automatic export of all figure-level datasets** for reproducibility
+* **Publication-quality visualization outputs (PDF, 600 dpi)**
 
 ---
 
-### 3. Trait Correlation Network
-- Constructs phenotype network using Pearson correlations
-- Identifies **hub traits** influencing overall architecture
-- Enables biological interpretation beyond pairwise correlations
+## Input Data Requirements
 
----
+### File 1: `data_2025.csv`
 
-### 4. Dual Selection Strategy
-
-#### Pareto Front
-- Non-dominated selection across multiple traits
-- No weighting assumptions
-
-#### MGIDI (Ideotype Distance)
-- Selects individuals closest to the theoretical optimum
-
-#### Final Selection:
-```
-
-Final Candidates = Pareto ∩ MGIDI
-
-```
-
----
-
-## Input Data
-
-### Autumn Dataset (2025)
 Required columns:
-- `Parent`
-- `SampleID`
-- `PlantHeight`
-- `NodeCount`
-- `Group`
 
-### Spring Dataset (2026)
+| Column Name | Description               |
+| ----------- | ------------------------- |
+| Parent      | Family identifier         |
+| SampleID    | Individual plant ID       |
+| Real_Count  | (Optional) count metadata |
+| PlantHeight | Plant height (2025)       |
+| NodeCount   | Internode number (2025)   |
+
+### File 2: `data_2026.csv`
+
 Required columns:
-- `Group`
-- `Matrix`
-- `Plant_Height`
-- `Internode`
-- `Branch_Number`
-- `Multifoliate_Score`
-- `Death_Code`
+
+| Column Name        | Description              |
+| ------------------ | ------------------------ |
+| Group              | Family identifier        |
+| Matrix             | Individual plant ID      |
+| Plant_Height       | Plant height (2026)      |
+| Internode          | Internode number         |
+| Branch_Number      | Branch number            |
+| Multifoliate_Score | Multifoliate trait score |
+| Death_Code         | Survival status          |
+
+### Notes
+
+* `Family_ID` and `Plant_ID` must match across years for merging
+* Missing or invalid family labels in 2026 are automatically filtered
+* Only individuals labeled as **Alive** are retained for downstream analysis
 
 ---
 
 ## Output Structure
 
-```
-
-gwas_selection_YYYY-MM-DD/
-│
-├── data/
-│   ├── merged_data.csv
-│   ├── correlation_matrix.csv
-│   └── gwas_candidates.csv
-│
-├── plots/
-│   ├── reaction_norms.png
-│   └── trait_network.png
+All results are written to:
 
 ```
+GWAS_Sampling_Results_YYYYMMDD/
+```
+
+### Core Data Outputs
+
+| File                                     | Description                           |
+| ---------------------------------------- | ------------------------------------- |
+| 01_Merged_Wide_Data_All.csv              | Merged two-year dataset               |
+| 02_Variance_Components_Repeatability.csv | Variance components and repeatability |
+| 03_Selected_200_GWAS.csv                 | Final selected GWAS subset            |
 
 ---
 
-## Workflow
+## Figure Outputs and Corresponding Data
 
-1. Data merging across years
-2. Feature engineering (dynamic traits)
-3. Survival filtering
-4. Reaction norm visualization
-5. Correlation network analysis
-6. Pareto selection
-7. MGIDI ranking
-8. Final candidate extraction
+### Figure 1 – Phenotypic Segregation
 
----
-
-## Use Case
-
-This pipeline is designed for:
-
-- GWAS population construction
-- Multi-trait elite selection
-- Phenotypic data mining across environments
+| File                          | Description       |
+| ----------------------------- | ----------------- |
+| Fig1_Segregation_Analysis.pdf | Density + boxplot |
+| Fig1A_Data.csv                | Density plot data |
+| Fig1B_Data.csv                | Boxplot data      |
 
 ---
 
-## Advantages
+### Figure 2 – PCA Structure
 
-- Integrates **temporal dynamics**
-- Avoids arbitrary weighting (Pareto)
-- Incorporates **ideotype theory (MGIDI)**
-- Produces reproducible and structured outputs
-
----
-
-## Limitations
-
-- MGIDI implemented as Euclidean approximation (not full factor-based model)
-- No mixed-model (BLUP) correction
-- Environmental variance not explicitly modeled
+| File                   | Description                        |
+| ---------------------- | ---------------------------------- |
+| Fig2_PCA_Structure.pdf | Scree plot + PCA distribution      |
+| Fig2A_Data.csv         | Eigenvalues and variance explained |
+| Fig2B_Data.csv         | Individual PCA scores              |
 
 ---
 
-## Recommended Extensions
+### Figure 3 – Sampling Justification
 
-- Replace MGIDI with `metan::mgidi()` implementation
-- Incorporate mixed models (e.g., `lme4`, `sommer`)
-- Use derived traits (plasticity) as GWAS phenotypes
-
----
-
-## Relationship to GeoSelect
-
-| Module | Purpose |
-|------|--------|
-| GeoSelect | Single-season geometric selection |
-| Multi-Year Pipeline | Cross-season, GWAS-ready selection |
+| File                                 | Description                                   |
+| ------------------------------------ | --------------------------------------------- |
+| Fig3_Sampling_Justification.pdf      | Allocation + density + strip plot             |
+| Fig3A_Data.csv                       | Neyman allocation results                     |
+| Fig3B_Data.csv                       | Density comparison (before vs after sampling) |
+| Fig3C_Data.csv                       | Within-family sampling distribution           |
+| Fig3_Selected_200_Plants_Details.csv | Selected individuals with traits              |
 
 ---
 
-## Author Notes
+## Methodological Workflow
 
-This pipeline is designed to bridge **field phenotyping** and **genomic analysis**, providing a scalable and interpretable framework for modern alfalfa breeding.
+### Step 1: Data Integration
+
+* Merge 2025 and 2026 datasets using `Family_ID` and `Plant_ID`
+* Define survival status
+* Compute derived traits (e.g., ΔHeight)
+
+### Step 2: Phenotypic Segregation Analysis
+
+* Visualize within-family distributions (density + rug)
+* Compare between-family variation (boxplot)
+
+### Step 3: Variance Decomposition
+
+Model:
+
+```
+y = μ + Family + ε
+```
+
+* Estimate:
+
+  * Between-family variance
+  * Within-family variance
+* Compute repeatability:
+
+```
+R = σ²_family / (σ²_family + σ²_residual)
+```
 
 ---
+
+### Step 4: Multivariate Structure (PCA)
+
+* Standardize traits
+* Extract PC1 and PC2
+* Use PCA space as sampling coordinate system
+
+---
+
+### Step 5: Neyman Optimal Allocation
+
+For each family:
+
+```
+Weight_h = N_h × S_h
+S_h = sqrt(Var(PC1) + Var(PC2))
+```
+
+* Allocate sample sizes proportionally
+* Apply integer correction (`smart_round`) to ensure total = 200
+
+---
+
+### Step 6: Within-Family Sampling
+
+* Divide individuals into **quantile-based PC1 gradients** (≤3 strata)
+* Allocate samples proportionally within strata
+* Perform random sampling within each gradient
+* Fill shortfall if necessary
+
+---
+
+### Step 7: Representativeness Validation
+
+* Compare PC1 density distributions (full vs sampled)
+* Visualize coverage across families
+* Confirm sampling spans full phenotypic gradients
+
+---
+
+## Reproducibility
+
+* Random seed fixed: `set.seed(2026)`
+* All intermediate datasets exported
+* Figures generated directly from saved data
+
+---
+
+## Dependencies
+
+Required R packages:
+
+```
+dplyr, tidyr, ggplot2, lme4, lmerTest,
+factoextra, readr, patchwork, showtext
+```
+
+The script automatically installs missing packages.
+
+---
+
+## Recommended Citation (Methods Description)
+
+This pipeline implements a **multivariate stratified sampling framework combining Neyman allocation and PCA-based quantile sampling**, designed to maximize genetic representativeness in GWAS subset selection from structured family populations.
+
+---
+
+## Contact / Notes
+
+* Ensure consistent trait units across years
+* Suitable for selfing-derived populations (e.g., EMS, inbred families)
+* Easily extendable to additional traits or environments
+
+---
+
+## License
+
+For academic and research use.
