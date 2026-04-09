@@ -113,230 +113,229 @@ For advanced multi-year selection and GWAS-ready candidate identification, see:
 
 # Alfalfa Multi-Year GWAS Pipeline: Dynamic Trait Integration and Elite Selection
 
-## Overview
+A reproducible R pipeline for **genetic variation analysis** and **GWAS core subset selection**, integrating:
 
-This repository contains a publication-ready R pipeline for:
-
-* Genetic variation analysis in structured populations
-* Variance component estimation using linear mixed models (LMM)
-* Multivariate phenotypic structure analysis (PCA)
-* Neyman optimal allocation for stratified sampling
-* Quantile-based deterministic sampling within families
-* Extraction of a representative core subset (n = 200) for GWAS
-
-The pipeline is specifically designed for **two-year phenotypic datasets measured under the same environment**, with a focus on **family-based segregation populations**.
+- Multi-year phenotypic data
+- Linear mixed models (LMM)
+- Stepwise PCA decomposition
+- Neyman optimal allocation
+- Quantile-based stratified sampling
 
 ---
 
-## Key Features
+## 🚀 Key Features
 
-* **Repeatability estimation (R)** using variance components (family vs residual)
-* **Multivariate sampling strategy** based on PC1–PC2 dispersion
-* **Robust stratified sampling** combining:
-
-  * Neyman allocation (between-family)
-  * Quantile gradient sampling (within-family)
-* **Deterministic + stochastic hybrid sampling** ensuring representativeness
-* **Automatic export of all figure-level datasets** for reproducibility
-* **Publication-quality visualization outputs (PDF, 600 dpi)**
+- 📊 **Two-year phenotype integration (2025 + 2026)**
+- 🧠 **Stepwise PCA framework**
+  - Cross-year shared traits
+  - Single-year expanded traits
+- 📈 **Repeatability estimation (LMM)**
+- 🎯 **Neyman optimal allocation**
+- 🔬 **Deterministic within-family sampling**
+- 📦 **Full export of publication-ready figures and data**
 
 ---
 
-## Input Data Requirements
+## 📂 Input Data Requirements
 
-### File 1: `data_2025.csv`
+### `data_2025.csv`
+| Column        | Description              |
+|--------------|--------------------------|
+| Parent       | Family ID                |
+| SampleID     | Plant ID                 |
+| PlantHeight  | Height                   |
+| NodeCount    | Internode number         |
 
-Required columns:
+---
 
-| Column Name | Description               |
-| ----------- | ------------------------- |
-| Parent      | Family identifier         |
-| SampleID    | Individual plant ID       |
-| Real_Count  | (Optional) count metadata |
-| PlantHeight | Plant height (2025)       |
-| NodeCount   | Internode number (2025)   |
-
-### File 2: `data_2026.csv`
-
-Required columns:
-
-| Column Name        | Description              |
-| ------------------ | ------------------------ |
-| Group              | Family identifier        |
-| Matrix             | Individual plant ID      |
-| Plant_Height       | Plant height (2026)      |
+### `data_2026.csv`
+| Column             | Description              |
+|--------------------|--------------------------|
+| Group              | Family ID                |
+| Matrix             | Plant ID                 |
+| Plant_Height       | Height                   |
 | Internode          | Internode number         |
-| Branch_Number      | Branch number            |
-| Multifoliate_Score | Multifoliate trait score |
+| Branch_Number      | Branch count             |
+| Multifoliate_Score | Leaf complexity score    |
 | Death_Code         | Survival status          |
 
-### Notes
+---
 
-* `Family_ID` and `Plant_ID` must match across years for merging
-* Missing or invalid family labels in 2026 are automatically filtered
-* Only individuals labeled as **Alive** are retained for downstream analysis
+## ⚙️ Installation
+
+```r
+install.packages(c(
+  "dplyr", "tidyr", "ggplot2", "lme4", "lmerTest",
+  "factoextra", "readr", "patchwork", "showtext"
+))
+````
 
 ---
 
-## Output Structure
+## ▶️ Usage
 
-All results are written to:
-
-```
-GWAS_Sampling_Results_YYYYMMDD/
+```r
+source("GWAS_sampling_v3.1.R")
 ```
 
-### Core Data Outputs
-
-| File                                     | Description                           |
-| ---------------------------------------- | ------------------------------------- |
-| 01_Merged_Wide_Data_All.csv              | Merged two-year dataset               |
-| 02_Variance_Components_Repeatability.csv | Variance components and repeatability |
-| 03_Selected_200_GWAS.csv                 | Final selected GWAS subset            |
-
----
-
-## Figure Outputs and Corresponding Data
-
-### Figure 1 – Phenotypic Segregation
-
-| File                          | Description       |
-| ----------------------------- | ----------------- |
-| Fig1_Segregation_Analysis.pdf | Density + boxplot |
-| Fig1A_Data.csv                | Density plot data |
-| Fig1B_Data.csv                | Boxplot data      |
-
----
-
-### Figure 2 – PCA Structure
-
-| File                   | Description                        |
-| ---------------------- | ---------------------------------- |
-| Fig2_PCA_Structure.pdf | Scree plot + PCA distribution      |
-| Fig2A_Data.csv         | Eigenvalues and variance explained |
-| Fig2B_Data.csv         | Individual PCA scores              |
-
----
-
-### Figure 3 – Sampling Justification
-
-| File                                 | Description                                   |
-| ------------------------------------ | --------------------------------------------- |
-| Fig3_Sampling_Justification.pdf      | Allocation + density + strip plot             |
-| Fig3A_Data.csv                       | Neyman allocation results                     |
-| Fig3B_Data.csv                       | Density comparison (before vs after sampling) |
-| Fig3C_Data.csv                       | Within-family sampling distribution           |
-| Fig3_Selected_200_Plants_Details.csv | Selected individuals with traits              |
-
----
-
-## Methodological Workflow
-
-### Step 1: Data Integration
-
-* Merge 2025 and 2026 datasets using `Family_ID` and `Plant_ID`
-* Define survival status
-* Compute derived traits (e.g., ΔHeight)
-
-### Step 2: Phenotypic Segregation Analysis
-
-* Visualize within-family distributions (density + rug)
-* Compare between-family variation (boxplot)
-
-### Step 3: Variance Decomposition
-
-Model:
+Ensure input files are in the working directory:
 
 ```
-y = μ + Family + ε
-```
-
-* Estimate:
-
-  * Between-family variance
-  * Within-family variance
-* Compute repeatability:
-
-```
-R = σ²_family / (σ²_family + σ²_residual)
+data_2025.csv
+data_2026.csv
 ```
 
 ---
 
-### Step 4: Multivariate Structure (PCA)
+## 🧬 Workflow Overview
 
-* Standardize traits
-* Extract PC1 and PC2
-* Use PCA space as sampling coordinate system
+### 1. Data Processing
+
+* Merge 2025 and 2026 datasets
+* Filter alive individuals
+* Remove missing values
 
 ---
 
-### Step 5: Neyman Optimal Allocation
+### 2. Phenotypic Analysis
 
-For each family:
+* Density distribution (Fig1A)
+* Boxplot comparison (Fig1B)
+* LMM-based repeatability
+
+---
+
+### 3. PCA Analysis (Stepwise)
+
+#### A. Cross-Year PCA
+
+* Traits:
+
+  * Height (2025 & 2026)
+  * Internode (2025 & 2026)
+
+#### B. 2026 PCA
+
+* Traits:
+
+  * Height
+  * Internode
+  * Branch
+  * Multifoliate
+
+#### C. Comprehensive PCA
+
+* All 6 traits
+* Used for:
+
+  * PC1 extraction
+  * Sampling
+
+---
+
+### 4. Sampling Strategy
+
+#### Neyman Allocation
+
+$$
+n_h \propto N_h \cdot S_h
+$$
+
+Where:
+
+* $S_h = \sqrt{\mathrm{Var}(PC1) + \mathrm{Var}(PC2)}$
+
+#### Within-Family Sampling
+
+* Stratified by **PC1 quantiles**
+* Ensures gradient coverage:
+
+  * High
+  * Medium
+  * Low
+
+---
+
+### 5. Output Generation
+
+#### 📁 Main Outputs
 
 ```
-Weight_h = N_h × S_h
-S_h = sqrt(Var(PC1) + Var(PC2))
+01_Merged_Wide_Data_All.csv
+02_Variance_Components_Repeatability.csv
+03_Comprehensive_PCA_*.csv
+04_Selected_200_GWAS.csv
 ```
 
-* Allocate sample sizes proportionally
-* Apply integer correction (`smart_round`) to ensure total = 200
+#### 📊 Figures
+
+* Fig1: Segregation analysis
+* Fig2: PCA biplots
+* Fig3: Sampling validation
+
+All figures include:
+
+* Source data (CSV)
+* High-resolution PDF
 
 ---
 
-### Step 6: Within-Family Sampling
-
-* Divide individuals into **quantile-based PC1 gradients** (≤3 strata)
-* Allocate samples proportionally within strata
-* Perform random sampling within each gradient
-* Fill shortfall if necessary
-
----
-
-### Step 7: Representativeness Validation
-
-* Compare PC1 density distributions (full vs sampled)
-* Visualize coverage across families
-* Confirm sampling spans full phenotypic gradients
-
----
-
-## Reproducibility
-
-* Random seed fixed: `set.seed(2026)`
-* All intermediate datasets exported
-* Figures generated directly from saved data
-
----
-
-## Dependencies
-
-Required R packages:
+## 📊 Output Directory Structure
 
 ```
-dplyr, tidyr, ggplot2, lme4, lmerTest,
-factoextra, readr, patchwork, showtext
+GWAS_Sampling_Two-Year_YYYYMMDD/
+├── Data tables (CSV)
+├── PCA results
+├── Sampling results
+├── Figures (PDF)
 ```
 
-The script automatically installs missing packages.
+---
+
+## ⚠️ Notes
+
+* Only **alive individuals** are analyzed
+* Missing values in traits → removed
+* PCA uses **standardization (scale = TRUE)**
+* Sampling size fixed at **200 individuals**
 
 ---
 
-## Recommended Citation (Methods Description)
+## 🔧 Customization
 
-This pipeline implements a **multivariate stratified sampling framework combining Neyman allocation and PCA-based quantile sampling**, designed to maximize genetic representativeness in GWAS subset selection from structured family populations.
+You can modify:
+
+```r
+# Target sample size
+smart_round(..., target = 200)
+
+# Number of quantile groups
+k_clusters <- 3
+```
 
 ---
 
-## Contact / Notes
+## 📌 Applications
 
-* Ensure consistent trait units across years
-* Suitable for selfing-derived populations (e.g., EMS, inbred families)
-* Easily extendable to additional traits or environments
+* GWAS population design
+* Core germplasm extraction
+* Multi-environment trait integration
+* Forage breeding research
 
 ---
 
-## License
+## 📜 License
 
-For academic and research use.
+**MIT License**
+
+---
+
+## 👤 Author
+
+Developed for advanced research in:
+
+* Forage breeding
+* Legume genetics
+* Germplasm evaluation
+
+---
