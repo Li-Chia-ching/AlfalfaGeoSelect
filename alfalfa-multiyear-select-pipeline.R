@@ -1,13 +1,10 @@
-# ==============================================================================
-# Genetic Variation Analysis + Stratified Within-Family GWAS Sampling R Script Based on Multidimensional Gradients (v3.1)
+# Genetic Variation Analysis + Stratified Within-Family GWAS Sampling R Script Based on Multidimensional Gradients (v5.3 - Modified)
 # Features: Multivariate variance-based Neyman allocation, quantile-gradient deterministic sampling, 
-#           LMM-based repeatability estimation, and publication-ready visualization
-# Applicability: Two-year measurements at the same location; extraction of a 200-individual core subset for sequencing
-# Key updates:
-#   - Stepwise PCA strategy (cross-year shared-trait biplot + 2026 single-year trait biplot), retaining vector arrows
-#   - Retention of 6-trait comprehensive PCA for sampling and PC1 extraction
-#   - Integration of 2025 + 2026 phenotypes to reflect cross-year overall growth performance
-# ==============================================================================
+# LMM-based repeatability estimation, and publication-ready visualization
+
+# ------------------- 0. User Parameters (User parameter configuration section) -------------------
+TARGET_TOTAL_N <- 140  # Requirement 1: Set the total number of individuals to be selected
+MAX_PER_FAMILY <- 20   # Requirement 2: Set the maximum number of individuals selected per family (n <= 20)
 
 # ------------------- 1. Check and load required packages -------------------
 required_packages <- c("dplyr", "tidyr", "ggplot2", "lme4", "lmerTest", 
@@ -76,7 +73,7 @@ df_alive <- df_wide %>% filter(Status == "Alive") %>%
 # ------------------- 4. Phenotypic segregation evidence (LMM repeatability) -------------------
 cat("Generating phenotypic segregation and variance structure...\n")
 
-# Fig 1A data (density distribution of plant height, using 2026 as example)
+# Fig 1A data
 write_csv(df_alive %>% select(Family_ID, Height_2026), 
           file.path(out_dir, "Fig1A_Data.csv"))
 
@@ -108,7 +105,7 @@ p_var_box <- ggplot(df_alive, aes(x = reorder(Family_ID, Height_2026, FUN = medi
 ggsave(file.path(out_dir, "Fig1_Segregation_Analysis.pdf"), 
        p_seg_density / p_var_box, width = 16, height = 12, dpi = 600)
 
-# Repeatability estimation (iterate over all 6 traits)
+# Repeatability estimation
 get_varcomp <- function(trait) {
   form <- as.formula(paste(trait, "~ 1 + (1|Family_ID)"))
   mod <- try(lmer(form, data = df_alive), silent = TRUE)
@@ -125,12 +122,11 @@ write_csv(varcomp_results, file.path(out_dir, "02_Variance_Components_Repeatabil
 # ------------------- 5. Multidimensional phenotypic structure (stepwise PCA strategy) -------------------
 cat("Performing stepwise PCA and rendering biplots...\n")
 
-# 5.1 Fig A: PCA on cross-year shared traits (height and internode number from 2025 & 2026; 4 variables)
+# 5.1 Fig A: PCA on cross-year shared traits
 traits_common <- c("Height_2025", "Internode_2025", "Height_2026", "Internode_2026")
 pca_common <- prcomp(df_alive %>% select(all_of(traits_common)), 
                      center = TRUE, scale. = TRUE)
 
-# Export Fig A data: eigenvalues and sample scores
 pca_common_summary <- summary(pca_common)
 eig_common <- data.frame(
   PC = 1:length(pca_common_summary$importance[1,]),
@@ -148,12 +144,11 @@ df_common_export <- bind_cols(
 )
 write_csv(df_common_export, file.path(out_dir, "Fig2B_Data_Common.csv"))
 
-# 5.2 Fig B: PCA on all 2026 traits (including branch number and multifoliate score)
+# 5.2 Fig B: PCA on all 2026 traits
 traits_2026_all <- c("Height_2026", "Internode_2026", "Branch_2026", "Multi_2026")
 pca_2026 <- prcomp(df_alive %>% select(all_of(traits_2026_all)), 
                    center = TRUE, scale. = TRUE)
 
-# Export Fig B data: eigenvalues and sample scores
 pca_2026_summary <- summary(pca_2026)
 eig_2026 <- data.frame(
   PC = 1:length(pca_2026_summary$importance[1,]),
@@ -171,12 +166,11 @@ df_2026_export <- bind_cols(
 )
 write_csv(df_2026_export, file.path(out_dir, "Fig2B_Data_2026.csv"))
 
-# 5.3 Comprehensive PCA (used for downstream sampling and PC1 extraction; includes all 6 traits)
+# 5.3 Comprehensive PCA (used for downstream sampling)
 pca_all <- prcomp(df_alive %>% select(all_of(all_traits)), 
                   center = TRUE, scale. = TRUE)
 df_alive <- df_alive %>% mutate(PC1 = pca_all$x[,1], PC2 = pca_all$x[,2])
 
-# Export eigenvalues and scores for comprehensive PCA
 pca_summary <- summary(pca_all)
 eig_data <- data.frame(
   PC = 1:length(pca_summary$importance[1,]),
@@ -188,35 +182,8 @@ write_csv(eig_data, file.path(out_dir, "03_Comprehensive_PCA_Eigenvalues.csv"))
 write_csv(df_alive %>% select(Family_ID, Plant_ID, PC1, PC2, all_of(all_traits)), 
           file.path(out_dir, "03_Comprehensive_PCA_Scores.csv"))
 
-# Plotting: stepwise PCA biplots (with vector arrows)
-# Fig A: cross-year shared traits
-p_pca_common <- fviz_pca_biplot(pca_common, 
-                                geom.ind = "point", 
-                                pointshape = 21, pointsize = 1.2, 
-                                fill.ind = "#377EB8", alpha.ind = 0.5,
-                                col.var = "#E41A1C", arrowsize = 0.6, labelsize = 3.5,
-                                repel = TRUE, 
-                                title = "A. PCA biplot of cross-year shared traits",
-                                ggtheme = academic_theme) + 
-  theme(legend.position = "none")
-
-# Fig B: 2026 traits
-p_pca_2026 <- fviz_pca_biplot(pca_2026, 
-                              geom.ind = "point", 
-                              pointshape = 21, pointsize = 1.2, 
-                              fill.ind = "#4DAF4A", alpha.ind = 0.5,
-                              col.var = "#E41A1C", arrowsize = 0.6, labelsize = 3.5,
-                              repel = TRUE, 
-                              title = "B. PCA biplot of 2026 multi-traits",
-                              ggtheme = academic_theme) + 
-  theme(legend.position = "none")
-
-ggsave(file.path(out_dir, "Fig2_PCA_Stepwise_Biplots.pdf"), 
-       p_pca_common | p_pca_2026, width = 14, height = 6, dpi = 600)
-cat("PCA biplots generated (Fig2_PCA_Stepwise_Biplots.pdf).\n")
-
-# ------------------- 6. Neyman optimal allocation and quantile-based deterministic sampling -------------------
-cat("Executing core algorithm: multivariate variance-weighted allocation and stratified quantile sampling...\n")
+# ------------------- 6. Neyman optimal allocation with limits & deterministic sampling -------------------
+cat(sprintf("Executing allocation: Target %d samples, Max %d per family...\n", TARGET_TOTAL_N, MAX_PER_FAMILY))
 
 family_stats <- df_alive %>%
   group_by(Family_ID) %>%
@@ -233,16 +200,33 @@ family_stats <- family_stats %>%
   mutate(S_h = ifelse(S_h_raw == 0, base_weight, S_h_raw),
          Weight = N_h * S_h)
 
-smart_round <- function(x, target = 200) {
-  res <- floor(x); diff <- target - sum(res)
-  if(diff > 0) {
-    idx <- order(x - res, decreasing = TRUE)
-    idx <- idx[seq_len(min(diff, length(idx)))]
-    res[idx] <- res[idx] + 1
+# New allocation algorithm: integer allocation with upper bound (cap) handling
+smart_allocate_with_cap <- function(weights, total_target, max_cap) {
+  n <- length(weights)
+  # Initialization: proportional floor allocation with cap constraint applied
+  alloc <- floor(total_target * weights / sum(weights))
+  alloc[alloc > max_cap] <- max_cap
+  
+  diff <- total_target - sum(alloc)
+  
+  # Distribute remaining slots using a D'Hondt-like priority adjustment
+  while(diff > 0) {
+    eligible <- alloc < max_cap
+    if(!any(eligible)) {
+      message("Warning: Cannot reach TARGET_TOTAL_N due to MAX_PER_FAMILY restrictions.")
+      break
+    }
+    priority_score <- weights / (alloc + 1)
+    priority_score[!eligible] <- -Inf
+    best <- which.max(priority_score)
+    alloc[best] <- alloc[best] + 1
+    diff <- diff - 1
   }
-  return(res)
+  return(alloc)
 }
-family_stats$Target_N <- smart_round(200 * family_stats$Weight / sum(family_stats$Weight))
+
+# Apply allocation algorithm with cap
+family_stats$Target_N <- smart_allocate_with_cap(family_stats$Weight, TARGET_TOTAL_N, MAX_PER_FAMILY)
 
 set.seed(2026) 
 selected_plants <- data.frame()
@@ -259,7 +243,13 @@ for (fam in family_stats$Family_ID) {
   fam_data <- fam_data %>% mutate(Gradient = as.factor(ntile(PC1, k_clusters)))
   
   grad_counts <- as.data.frame(table(fam_data$Gradient))
-  grad_alloc <- smart_round(n_alloc * (grad_counts$Freq / sum(grad_counts$Freq)), target = n_alloc)
+  # To ensure stratified sampling does not violate the cap, replace smart_round with simple correction so that subsamples sum to n_alloc
+  grad_alloc <- floor(n_alloc * (grad_counts$Freq / sum(grad_counts$Freq)))
+  grad_diff <- n_alloc - sum(grad_alloc)
+  if(grad_diff > 0) {
+    add_idx <- order(n_alloc * (grad_counts$Freq / sum(grad_counts$Freq)) - grad_alloc, decreasing = TRUE)[1:grad_diff]
+    grad_alloc[add_idx] <- grad_alloc[add_idx] + 1
+  }
   
   fam_sampled <- data.frame()
   for (i in 1:k_clusters) {
@@ -279,9 +269,9 @@ for (fam in family_stats$Family_ID) {
   selected_plants <- bind_rows(selected_plants, fam_sampled)
 }
 
-write_csv(selected_plants, file.path(out_dir, "04_Selected_200_GWAS.csv"))
+write_csv(selected_plants, file.path(out_dir, sprintf("04_Selected_%d_GWAS.csv", TARGET_TOTAL_N)))
 write_csv(selected_plants %>% select(Family_ID, Plant_ID, PC1, all_of(all_traits)), 
-          file.path(out_dir, "Fig3_Selected_200_Plants_Details.csv"))
+          file.path(out_dir, sprintf("Fig3_Selected_%d_Plants_Details.csv", TARGET_TOTAL_N)))
 
 # ------------------- 7. Sampling representativeness validation -------------------
 # Fig 3A data: Neyman allocation results
@@ -295,22 +285,42 @@ p_neyman <- ggplot(family_stats, aes(x = reorder(Family_ID, Target_N), y = Targe
        title = "A. Sample allocation based on population size and multivariate dispersion") +
   academic_theme + theme(axis.text.y = element_text(size = 6))
 
-# Fig 3B data: density comparison of PC1
+# ---------------------------------------------------------
+# Fig 3B data: density comparison of PC1 + K-S Test
+# ---------------------------------------------------------
+subset_label <- paste(TARGET_TOTAL_N, "core subset")
+
+# 1. Perform Kolmogorov-Smirnov test
+ks_res <- ks.test(df_alive$PC1, selected_plants$PC1)
+d_stat <- ks_res$statistic
+p_val <- ks_res$p.value
+
+# 2. Format test result text (automatically adjust p-value display)
+p_text <- ifelse(p_val < 0.001, "p < 0.001", sprintf("p = %.3f", p_val))
+ks_annotation <- sprintf("Two-sample K-S test:\nD = %.3f, %s", d_stat, p_text)
+
+# 3. Prepare plotting data
 density_compare_data <- bind_rows(
   df_alive %>% mutate(Group = "Total population") %>% select(PC1, Group),
-  selected_plants %>% mutate(Group = "200 core subset") %>% select(PC1, Group)
+  selected_plants %>% mutate(Group = subset_label) %>% select(PC1, Group)
 )
 write_csv(density_compare_data, file.path(out_dir, "Fig3B_Data.csv"))
 
+fill_mapping <- c("Total population" = "grey50")
+fill_mapping[subset_label] <- "#E41A1C"
+
+# 4. Plot and add annotation
 p_density_compare <- ggplot() +
   geom_density(data = df_alive, aes(x = PC1, fill = "Total population"), alpha = 0.4) +
-  geom_density(data = selected_plants, aes(x = PC1, fill = "200 core subset"), alpha = 0.5) +
-  scale_fill_manual(name = "Population type", 
-                    values = c("Total population" = "grey50", 
-                               "200 core subset" = "#E41A1C")) +
+  geom_density(data = selected_plants, aes(x = PC1, fill = subset_label), alpha = 0.5) +
+  scale_fill_manual(name = "Population type", values = fill_mapping) +
   labs(x = "Cross-year composite growth (PC1)", y = "Density", 
        title = "B. Representativeness of sampled core subset") +
-  academic_theme + theme(legend.position = "bottom")
+  academic_theme + 
+  theme(legend.position = "bottom") +
+  annotate("text", x = max(df_alive$PC1, na.rm = TRUE), 
+           y = Inf, label = ks_annotation, 
+           hjust = 1, vjust = 1.5, family = "SimSun", size = 3.5, color = "black")
 
 # Fig 3C data: within-family sampling distribution
 strip_data <- df_alive %>%
@@ -330,4 +340,3 @@ ggsave(file.path(out_dir, "Fig3_Sampling_Justification.pdf"),
        (p_neyman | p_density_compare) / p_strip, width = 16, height = 14, dpi = 600)
 
 cat("Pipeline completed. Stepwise PCA biplots and full sampling results have been generated, with all figure data exported.\n")
-# ==============================================================================
