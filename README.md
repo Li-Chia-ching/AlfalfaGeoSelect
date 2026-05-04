@@ -1,227 +1,213 @@
----
 
-# 🧬 Phenomic-to-GWAS Pipeline: Spatial Correction, Clustering & Core Subset Sampling (v5.4)
+# 🧬 Integrated Pre-GWAS Phenomic Pipeline & Core Collection Sampling (v6.0)
 
-An end-to-end R pipeline for **field-scale phenomic preprocessing, macro-phenotypic structure discovery, and GWAS-oriented core subset sampling**.
+An end-to-end R pipeline for **phenomic structure dissection and GWAS-oriented core subset selection** in *Medicago sativa* (alfalfa) or similar outcrossing populations.
 
-Designed for **selfed family populations**, this framework integrates **2D spatial correction (P-splines), multivariate clustering, PCA-based gradient extraction, and variance-weighted Neyman allocation** to construct a statistically representative and biologically meaningful subset for Genome-Wide Association Studies (GWAS).
+This version integrates:
 
----
+* **Multidimensional phenotypic structure analysis (PCA + clustering)**
+* **Variance-aware Neyman allocation with stratified sampling**
 
-## 🚀 What's New in v5.4
-
-### 🧭 1. Pre-GWAS Phenomic Module (NEW)
-
-A dedicated upstream module has been introduced to **remove environmental noise and define phenotypic structure before sampling**:
-
-* **2D Spatial Correction (P-splines via `sommer`)**
-  Corrects field heterogeneity (row × column effects) and extracts **noise-reduced phenotypes (BLUP-like estimates)**.
-
-* **Matrix-to-Coordinate Parsing**
-  Converts field layout identifiers (e.g., A01, AA47) into **strict numerical spatial coordinates**, enabling spatial modeling.
-
-* **Macro Phenotypic Clustering (K-means + Silhouette)**
-  Identifies **population-level phenotypic strata**, with biologically constrained cluster number (K ≤ 3).
-
-* **PCA Structural Visualization**
-  Generates **low-dimensional representations of phenotypic architecture**, supporting downstream sampling justification.
-
-* **Plot Data Export (Origin/GraphPad-ready)**
-  Automatically exports **underlying plotting datasets**, ensuring full reproducibility and publication flexibility.
+while **removing spatial correction modules** to prevent statistical artifacts.
 
 ---
 
-### 📊 2. Enhanced Sampling Validation
+## 🚀 Key Features
 
-* **K-S Test (v5.3 retained)**
-  Quantifies distributional similarity between total population and sampled subset.
-* Now explicitly grounded in:
+### 1. Phenomic Structure Decomposition (Macro-scale)
 
-  > *“sampling from spatially corrected and cluster-informed phenotypic space”*
+* Robust **missing data imputation** (within-family median → global fallback)
+* **K-means clustering** with silhouette-based K selection
+* **PCA-based gradient analysis**
+* Visualization:
+
+  * Phenotypic clustering (Fig S1)
+  * PCA biplot with trait loadings (Fig 2)
 
 ---
 
-### ⚙️ 3. Unified Two-Stage Design
+### 2. Genetic Signal Validation (Pre-GWAS Evidence)
 
-The pipeline is now explicitly structured as:
+* Within-family segregation visualization (density + boxplot)
+* Variance component estimation using **LMM (lme4)**
+* Repeatability calculation:  
+  `R = σ²_family / (σ²_family + σ²_within)`
+
+---
+
+### 3. Core Collection Sampling (Micro-scale)
+
+* **Weighted Neyman allocation**:
+
+  `n_h ∝ N_h · S_h`
+
+* Variance defined in **PCA space (PC1 + PC2 weighted)**
+
+* Constraints:
+
+  * Total sample size (`TARGET_TOTAL_N`)
+  * Max per family (`MAX_PER_FAMILY`)
+
+* Within-family sampling:
+
+  * **PC1 quantile stratification**
+  * Avoids extreme-value bias
+
+---
+
+### 4. Sampling Validation
+
+* Distribution comparison (K-S test)
+* Density overlap (population vs subset)
+* Within-family sampling strip plot
+* Cluster coverage summary
+
+---
+
+## ⚙️ Pipeline Structure
 
 ```
-Stage I   : Spatial Correction + Phenotypic Clustering
-Stage II  : PCA-driven Stratified Sampling (GWAS subset construction)
-```
+Stage 1:
+  ├── Data loading & imputation
+  ├── Phenotypic clustering (K-means)
+  └── PCA structure visualization
 
-This separation aligns directly with **standard GWAS methodological logic**:
-
-> noise removal → structure identification → representative sampling
-
----
-
-## 🛠️ Key Features
-
-### 🔬 Stage I: Phenomic Preprocessing
-
-* [x] **Spatial Noise Removal:** 2D spline-based correction of field effects
-* [x] **Robust LMM Fallback:** Automatic downgrade to standard LMM if spatial model fails
-* [x] **Phenotypic Scaling & Cleaning:** Z-score normalization with NA handling
-* [x] **Cluster-Constrained Stratification:** Avoids over-fragmentation of family-level variation
-
-### 📈 Stage II: GWAS-Oriented Sampling
-
-* [x] **Multi-Year Data Fusion:** Integrates 2025–2026 datasets and growth dynamics
-* [x] **Repeatability Estimation (LMM):** Quantifies genetic signal strength
-* [x] **Stepwise PCA Framework:** Extracts core phenotypic gradients (PC1 as growth axis)
-* [x] **Capped Neyman Allocation:** Variance-weighted optimal sampling with family constraints
-* [x] **Stratified Quantile Sampling:** Ensures coverage of extreme and median phenotypes
-
----
-
-## 📦 Dependencies
-
-Automatically installed if missing:
-
-* **Data Wrangling:** `dplyr`, `tidyr`, `readr`
-* **Modeling:** `sommer`, `lme4`, `lmerTest`
-* **Multivariate Analysis:** `factoextra`, `cluster`
-* **Visualization:** `ggplot2`, `patchwork`, `showtext`
-
-> **⚠️ Font Note**
-> The pipeline uses `SimSun` for publication-grade figures.
-> On macOS/Linux, ensure availability of `STSong.ttf` or equivalent CJK font.
-
----
-
-## 🚦 Usage
-
-### 1. Input Data
-
-Place the following files in your working directory:
-
-* `data_2026.csv` → **Required for Stage I (spatial correction + clustering)**
-* `data_2025.csv` → Optional but required for **two-year GWAS sampling**
-
----
-
-### 2. Run Stage I (Pre-GWAS)
-
-```r
-source("PreGWAS_Phenomic_Pipeline.R")
-```
-
-Outputs:
-
-* `data_2026_Corrected.csv`
-* `data_2026_Corrected_with_Clusters.csv`
-* Phenotypic diversity plots + plotting datasets
-
----
-
-### 3. Configure Sampling Parameters
-
-```r
-TARGET_TOTAL_N <- 140
-MAX_PER_FAMILY <- 20
+Stage 2:
+  ├── Segregation & variance validation
+  ├── PCA gradient decomposition
+  ├── Neyman allocation
+  ├── Stratified sampling
+  └── Sampling validation & coverage
 ```
 
 ---
 
-### 4. Run Stage II (Sampling Pipeline)
+## 📂 Input Data Requirements
 
-```r
-source("GWAS_Sampling_Pipeline_v5.4.R")
+### Required file:
+
+```
+data_202605.csv
+```
+
+### Required columns:
+
+* `Family` → will be renamed to `Family_ID`
+* `ID` → will be renamed to `Plant_ID`
+
+### Trait variables:
+
+```
+Plant_Height_Nov
+Internode_Nov
+Plant_Height_Mar
+Internode_Mar
+Branch_Number_Mar
+Multifoliate_Score_Mar
+Plant_Height_May
 ```
 
 ---
 
-## 📂 Output Structure
+## 📊 Output Structure
 
-### 📈 Phenomic Structure (Stage I)
+All outputs are written to:
 
-* `01_Phenotypic_Diversity_Structure.pdf`
+```
+GWAS_Integrated_Pipeline_YYYYMMDD/
+```
 
-  * A: Optimal cluster number (Silhouette)
-  * B: PCA-based phenotypic structure
+### Core outputs:
 
-* `PlotData_FigA_Silhouette_Scores.csv`
-
-* `PlotData_FigB_PCA_Scatter.csv`
+| File                                       | Description                       |
+| ------------------------------------------ | --------------------------------- |
+| `00_Imputed_Dataset.csv`                   | Cleaned dataset                   |
+| `01_Variance_Components_Repeatability.csv` | Variance decomposition            |
+| `02_PCA_*`                                 | PCA eigenvalues, loadings, scores |
+| `03_Selected_XXX_GWAS.csv`                 | Final selected individuals        |
+| `03_Selected_XXX_WithTraits.csv`           | Selection with phenotypes         |
+| `04_Cluster_Coverage_Summary.csv`          | Sampling representativeness       |
 
 ---
 
-### 📈 GWAS Sampling Justification (Stage II)
+### Figures (publication-ready)
 
+* `FigS1_Phenotypic_Clustering.pdf`
 * `Fig1_Segregation_Analysis.pdf`
-* `Fig2_PCA_Stepwise_Biplots.pdf`
+* `Fig2_PCA_Biplot_Enhanced.pdf`
 * `Fig3_Sampling_Justification.pdf`
 
-  * A: Neyman allocation
-  * B: K-S test distribution comparison
-  * C: Within-family gradient coverage
+---
+
+## 🔬 Methodological Highlights
+
+### Why remove spatial correction?
+
+Previous versions included spatial adjustment, but:
+
+* Caused **overfitting**
+* Led to **within-family variance collapse (SD → 0)**
+* Invalidated downstream:
+
+  * variance component estimation
+  * Neyman allocation
+
+👉 v6.0 uses **raw phenotypic structure + robust imputation**, ensuring:
+
+* biologically meaningful variance
+* stable sampling weights
 
 ---
 
-### 📊 Core Data Outputs
+### Why PCA-driven sampling?
 
-* `data_2026_Corrected.csv` ⭐（关键输入）
-* `03_Comprehensive_PCA_Scores.csv`
-* **`04_Selected_140_GWAS.csv`** ⭐（最终GWAS样本）
+* Captures **multivariate trait covariance**
+* Reduces dimensionality
+* Provides a **continuous sampling gradient (PC1)**
 
 ---
 
-## 🧠 Methodological Insight
+### Why Neyman allocation?
 
-### Why Spatial Correction First?
+* Maximizes **sampling efficiency**
+* Allocates more samples to:
 
-Field experiments introduce structured environmental variance:
+  * larger families
+  * more variable families
 
-* irrigation gradients
-* soil heterogeneity
-* row/column effects
+---
 
-Failing to remove these leads to:
+## 🧩 Dependencies
 
-> **phenotype ≠ genotype signal**
-
-This pipeline explicitly models:
-
+```r
+dplyr, tidyr, ggplot2
+lme4, lmerTest
+factoextra
+cluster
+patchwork
+viridis
+readr
+showtext
 ```
-Phenotype = Genetic Effect + Spatial Noise
+
+---
+
+## ▶️ How to Run
+
+```r
+source("pipeline_v6.0.R")
 ```
 
-and extracts:
-
-> **noise-reduced phenotypes for unbiased downstream analysis**
+Outputs will be automatically generated in a timestamped directory.
 
 ---
 
-### Why Cluster Before Sampling?
+## 📌 Parameter Configuration
 
-Traditional GWAS sampling assumes random or variance-based selection.
-This pipeline instead operates on:
-
-> **cluster-informed phenotypic space**
-
-Advantages:
-
-* prevents over-sampling dominant families
-* preserves **macro-level trait architecture**
-* improves **allelic diversity capture**
-
----
-
-## 💡 Interpreting the K-S Test (Fig 3B)
-
-* **D-statistic** → maximum distributional deviation
-* **p-value** → statistical difference
-
-> A small D indicates strong representativeness.
-
-⚠️ **Important:**
-A significant p-value (*p < 0.05*) is expected.
-
-Reason:
-
-* Sampling intentionally enriches **phenotypic extremes**
-* This increases GWAS detection power
+```r
+TARGET_TOTAL_N <- 140   # total GWAS sample size
+MAX_PER_FAMILY <- 20    # cap per family
+```
 
 ---
 
@@ -263,5 +249,3 @@ Stratified Sampling
       ↓
 GWAS Core Subset
 ```
-
----
