@@ -30,8 +30,9 @@ while **removing spatial correction modules** to prevent statistical artifacts.
 
 * Within-family segregation visualization (density + boxplot)
 * Variance component estimation using **LMM (lme4)**
-* Repeatability calculation:  
-  `R = σ²_family / (σ²_family + σ²_within)`
+* Repeatability (R):
+
+  R = σ_family^2 / (σ_family^2 + σ_within^2)
 
 ---
 
@@ -39,7 +40,7 @@ while **removing spatial correction modules** to prevent statistical artifacts.
 
 * **Weighted Neyman allocation**:
 
-  `n_h ∝ N_h · S_h`
+  n_h = (N_h * S_h) / Σ(N_h * S_h) * n_total
 
 * Variance defined in **PCA space (PC1 + PC2 weighted)**
 
