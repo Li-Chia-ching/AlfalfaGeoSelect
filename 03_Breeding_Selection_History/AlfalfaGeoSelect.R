@@ -1,14 +1,10 @@
-# ============================================================================
-# Alfalfa Selection V3.0: Publication-Ready Visualization
+# Alfalfa Selection V3.0: Publication-Ready Visualization ----
 # Clean implementation with standardized annotations and vector-based graphics
-# ============================================================================
 
 rm(list = ls())
 options(stringsAsFactors = FALSE)
 
-# ------------------------------
-# 1. Environment setup
-# ------------------------------
+# 1. Environment Setup ----
 required_packages <- c("dplyr", "tidyr", "ggplot2", "stringr", "readr", "metR")
 new_packages <- required_packages[!(required_packages %in% installed.packages()[, "Package"])]
 if (length(new_packages)) install.packages(new_packages, repos = "https://cran.rstudio.com/")
@@ -19,9 +15,7 @@ library(ggplot2)
 library(stringr)
 library(readr)
 
-# ------------------------------
-# 2. Data loading and cleaning
-# ------------------------------
+# 2. Data Loading and Cleaning ----
 clean_pheno_data <- function(df_raw, value_name) {
   colnames(df_raw)[1] <- "Row_ID"
   
@@ -38,7 +32,7 @@ clean_pheno_data <- function(df_raw, value_name) {
   return(df_long)
 }
 
-# ---- Load plant height data ----
+## Load plant height data ----
 if (exists("initial_flowering_2025")) {
   raw_height <- get("initial_flowering_2025")
 } else if (file.exists("Rawdata-PlantHeight_202504.csv")) {
@@ -47,7 +41,7 @@ if (exists("initial_flowering_2025")) {
   stop("Plant height data not found")
 }
 
-# ---- Load multifoliate data ----
+## Load multifoliate data ----
 if (exists("Alfalfa_Multi_202504")) {
   raw_multi <- get("Alfalfa_Multi_202504")
 } else if (file.exists("Rawdata-Multifoliate_202504.csv")) {
@@ -56,7 +50,7 @@ if (exists("Alfalfa_Multi_202504")) {
   stop("Multifoliate data not found")
 }
 
-# ---- Construct full grid and merge ----
+## Construct full grid and merge ----
 all_rows <- paste0("L", 1:50)
 all_cols <- LETTERS[1:21]
 
@@ -67,9 +61,7 @@ df_analysis <- full_grid %>%
   left_join(clean_pheno_data(raw_height, "Height"), by = c("Row_ID", "Col_ID", "Plant_ID")) %>%
   left_join(clean_pheno_data(raw_multi, "Multi_Score"), by = c("Row_ID", "Col_ID", "Plant_ID"))
 
-# ------------------------------
-# 3. Index calculation and selection
-# ------------------------------
+# 3. Index Calculation and Selection ----
 df_analysis <- df_analysis %>%
   mutate(Index = (0.5 * Height) * (0.5 * Multi_Score))
 
@@ -89,11 +81,9 @@ df_analysis <- df_analysis %>%
     )
   )
 
-# ------------------------------
-# 4. Contour visualization
-# ------------------------------
+# 4. Contour Visualization ----
 
-# Background grid for contour surface
+## Background grid for contour surface ----
 grid_x <- seq(min(df_analysis$Height, na.rm = TRUE),
               max(df_analysis$Height, na.rm = TRUE),
               length.out = 100)
@@ -103,12 +93,13 @@ grid_y <- seq(1, 5, length.out = 100)
 grid_map <- expand.grid(Height = grid_x, Multi_Score = grid_y) %>%
   mutate(Index = (0.5 * Height) * (0.5 * Multi_Score))
 
+## Plot generation ----
 p_contour <- ggplot(df_analysis %>% filter(Status != "Missing"),
                     aes(x = Height, y = Multi_Score)) +
   
   # Contour background
   geom_contour(data = grid_map,
-               aes(z = Index, color = ..level..),
+               aes(z = Index, color = after_stat(level)),
                bins = 12, linewidth = 0.3, alpha = 0.4) +
   scale_color_viridis_c(option = "viridis", name = "Selection Index") +
   
@@ -176,9 +167,7 @@ p_contour <- ggplot(df_analysis %>% filter(Status != "Missing"),
     plot.title = element_text(face = "bold")
   )
 
-# ------------------------------
-# 5. Output
-# ------------------------------
+# 5. Output ----
 timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
 out_dir <- paste0("Alfalfa_GeoViz_Pro_", timestamp)
 dir.create(out_dir)
