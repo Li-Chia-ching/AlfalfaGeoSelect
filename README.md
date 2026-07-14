@@ -1,7 +1,7 @@
 # GWAS‑Driven Alfalfa Breeding Pipeline — R Script Suite
 
 **Repository:** Alfalfa-GWAS-Tools  
-**Last Updated:** 2026-07-11  
+**Last Updated:** 2026-07-14
 **Status:** Production – validated for internal use
 
 ---
@@ -19,7 +19,7 @@ The scripts are modular, self‑contained, and rely only on standard CRAN packag
 | Script | Purpose | Input | Output |
 |--------|---------|-------|--------|
 | `Alfalfa_Selection_V3.0.R` | Visualises selection index (height × multifoliate) via contour plot, selects top 50 individuals | CSV files or in‑memory data frames with row/column grid data | PNG figure + CSV of selected 50 |
-| `GWAS_Integrated_Pipeline_v7.1.R` | Performs imputation, clustering, Neyman allocation, stratified sampling, and **force‑fill** to exact 200 individuals for GWAS | `data_202605_gwas.csv` (raw field data) | Hierarchical output directory with imputed data, PCA, variance components, selected core sets, figures, and diagnostic report |
+| `GWAS_Integrated_Pipeline_v7.2.R` | Performs imputation, clustering, Neyman allocation, stratified sampling, and **force‑fill** to exact 200 individuals for GWAS | `data_202605_gwas.csv` (raw field data) | Hierarchical output directory with imputed data, PCA, variance components, selected core sets, figures, and diagnostic report |
 | `Crossing_Recommendation.R` | Generates strong×weak and strong×strong crossing pairs for two traits from a core set of 200 | `GWAS_Pipeline_Robust200_*/02_Selected_200_GWAS_FullTraits.csv` | `03_RealData_Recommended_Crossing_Plan.csv` (top pairs) |
 | `Expert_Panel_Diagnostics.R` | Compares original automatically selected 200 vs expert‑adjusted 212‑plant cohort; assesses balance and representativeness | Two Excel files + GWAS database CSV | PDF figure, family distribution table, added/removed ID lists, K‑S test result |
 
@@ -41,7 +41,7 @@ The scripts are modular, self‑contained, and rely only on standard CRAN packag
 ## 4. Recommended Workflow
 
 1. **Collect raw field data** in the required CSV format (see individual script documentation for exact column names).
-2. **Run `GWAS_Integrated_Pipeline_v7.1.R`** to obtain a balanced core set of 200 individuals, along with all supporting data tables and figures.
+2. **Run `GWAS_Integrated_Pipeline_v7.2.R`** to obtain a balanced core set of 200 individuals, along with all supporting data tables and figures.
 3. **Perform expert review** of the 200‑set, adding/removing plants as needed, and save the final list as an Excel file.
 4. **Run `Expert_Panel_Diagnostics.R`** to validate that the expert adjustments have not compromised representativeness.
 5. **Run `Crossing_Recommendation.R`** on the final core set (or the original 200) to generate crossing plans for post‑GWAS validation.
@@ -62,7 +62,7 @@ All scripts are independent and can be executed separately; however, the intende
 - Top‑50 selection with contour plot, cutoff line, and gradient annotation
 - Output: 300 DPI PNG + selection list CSV
 
-### 5.2. `GWAS_Integrated_Pipeline_v7.1.R`
+### 5.2. `GWAS_Integrated_Pipeline_v7.2.R`
 **Purpose:** Core collection sampling with exact‑N enforcement.  
 **Key features:**
 - Within‑family median imputation
@@ -165,7 +165,7 @@ Always review the parameters before running to match your experimental design.
 
 - All scripts are written in base R with tidyverse packages; they have been tested with R 4.2.3 on Windows 10 and Ubuntu 20.04.
 - No external software or proprietary libraries are required.
-- The repository is version‑controlled using Git. Tagged releases correspond to major pipeline versions (v6.0, v7.1, etc.).
+- The repository is version‑controlled using Git. Tagged releases correspond to major pipeline versions (v6.0, v7.2, etc.).
 
 ---
 
